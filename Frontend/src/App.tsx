@@ -1,13 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './shared/components';
 import { ProductsListPage, ProductDetailPage } from './features/products/pages';
+import { DashboardPage } from './features/dashboard/pages';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<ProductsListPage />} />
+          <Route index element={<DashboardPage />} />
           <Route path="products" element={<ProductsListPage />} />
           <Route path="products/:id" element={<ProductDetailPage />} />
           <Route path="inventory" element={<div className="text-2xl p-6">Inventory Dashboard</div>} />
