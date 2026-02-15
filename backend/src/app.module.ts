@@ -4,6 +4,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+// Feature Modules
+import { PartsModule } from './modules/parts/parts.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+
+
 @Module({
   imports: [
     // Environment variables
@@ -28,6 +36,13 @@ import { AppService } from './app.service';
       }),
       inject: [ConfigService],
     }),
+
+    // Feature Modules
+    PartsModule,
+    CustomersModule,
+    OrdersModule,
+    SuppliersModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
