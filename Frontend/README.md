@@ -1,80 +1,36 @@
-# Product Management Frontend
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-A modern, feature-based React application for product management built with TypeScript, Vite, and Tailwind CSS.
+## Getting Started
 
-## 🏗️ Project Structure
-
-```
-src/
-├── features/              # Feature-based modules
-│   ├── products/         # Product management
-│   │   ├── components/   # Product-specific components
-│   │   ├── hooks/        # Product-specific hooks
-│   │   ├── api/          # Product API services
-│   │   └── pages/        # Product pages
-│   ├── inventory/        # Inventory management
-│   ├── orders/           # Order management
-│   ├── suppliers/        # Supplier management
-│   └── reports/          # Reporting module
-│
-├── shared/               # Shared resources
-│   ├── components/       # Reusable UI components
-│   ├── hooks/            # Reusable hooks
-│   └── utils/            # Utility functions
-│
-├── types/                # TypeScript type definitions
-└── config/               # Configuration files
-```
-
-## 🚀 Getting Started
+First, run the development server:
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
 npm run dev
-
-# Build for production
-npm run build
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## 🎨 Features
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- ✅ Feature-based architecture
-- ✅ TypeScript for type safety
-- ✅ Tailwind CSS for styling
-- ✅ React Router for navigation
-- ✅ Axios for API calls
-- ✅ Reusable components
-- ✅ Custom hooks
-- ✅ Form validation
-- ✅ Pagination support
-- ✅ Search and filtering
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## 📦 Key Components
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-### Shared Components
-- **Button** - Customizable button with variants and loading states
-- **Input** - Form input with label, error, and helper text
-- **Modal** - Accessible modal dialog
-- **Table** - Generic table component
-- **Layout** - Main application layout with sidebar
+## Learn More
 
-### Product Features
-- **ProductList** - Grid view of products with pagination
-- **ProductCard** - Individual product card
-- **ProductForm** - Create/edit product form
-- **ProductFilters** - Search and filter controls
+To learn more about Next.js, take a look at the following resources:
 
-## 🔧 Configuration
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-Create a `.env` file in the root directory:
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-```env
-VITE_API_URL=http://localhost:3000/api
-```
+## Deploy on Vercel
 
-## 📝 API Integration
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-The app connects to a NestJS backend running on `http://localhost:3000/api`. Make sure the backend is running before starting the frontend.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

@@ -1,386 +1,98 @@
-# Auto Parts Management System - Backend API
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-A comprehensive NestJS REST API for managing auto parts inventory, customers, orders, and suppliers with PostgreSQL database.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## 🚀 Features
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-- **14 Database Entities** with complete relationships
-- **26+ REST API Endpoints** with full CRUD operations
-- **Swagger/OpenAPI Documentation** for interactive API testing
-- **TypeORM** for database management with automatic migrations
-- **Global Validation** using class-validator
-- **CORS Support** for frontend integration
-- **Transaction Support** for complex operations
+## Description
 
-## 📋 Prerequisites
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-- Node.js (v18 or higher)
-- PostgreSQL (v14 or higher)
-- npm or yarn
-
-## 🛠️ Installation
-
-1. **Install dependencies:**
-```bash
-npm install
-```
-
-2. **Configure environment variables:**
-
-Create a `.env` file in the backend root:
-
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-DB_DATABASE=autoparts_db
-
-# JWT Configuration (for future authentication)
-JWT_SECRET=your-secret-key-here
-JWT_EXPIRATION=7d
-
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-```
-
-3. **Create PostgreSQL database:**
-```bash
-psql postgres -c "CREATE DATABASE autoparts_db;"
-```
-
-4. **Start the development server:**
-```bash
-npm run start:dev
-```
-
-The server will start on `http://localhost:3000`
-
-## 📚 API Documentation
-
-Interactive Swagger documentation is available at:
-```
-http://localhost:3000/api/docs
-```
-
-## 🗄️ Database Schema
-
-### Core Entities (14 Tables)
-
-1. **users** - User accounts with role-based access (admin, manager, sales, warehouse)
-2. **customers** - Customer management (retail, wholesale, dealer types)
-3. **vehicles** - Customer vehicle tracking
-4. **categories** - Hierarchical part categories
-5. **suppliers** - Supplier management with ratings
-6. **parts** - Main inventory table with pricing and stock tracking
-7. **part_compatibility** - Vehicle fitment data
-8. **orders** - Customer orders and quotes
-9. **order_items** - Order line items
-10. **payments** - Payment tracking
-11. **purchase_orders** - Supplier orders
-12. **purchase_order_items** - Purchase order line items
-13. **inventory_movements** - Stock movement audit trail
-14. **returns** - Customer returns and warranty claims
-
-### Entity Relationships
-
-```
-Customer ──< Vehicle
-Customer ──< Order ──< OrderItem >── Part
-Customer ──< Return
-Supplier ──< Part
-Supplier ──< PurchaseOrder ──< PurchaseOrderItem >── Part
-Category ──< Part
-Category ──< Category (self-referencing for hierarchy)
-Part ──< PartCompatibility
-Part ──< InventoryMovement
-Order ──< Payment
-User ──< Order (created_by)
-User ──< InventoryMovement (created_by)
-```
-
-## 🔌 API Endpoints
-
-### Parts Management
-- `POST /parts` - Create a new part
-- `GET /parts` - Get all parts
-- `GET /parts/low-stock` - Get parts below minimum stock level
-- `GET /parts/:id` - Get part by ID
-- `PATCH /parts/:id` - Update a part
-- `DELETE /parts/:id` - Delete a part
-
-### Customer Management
-- `POST /customers` - Create a new customer
-- `GET /customers` - Get all customers
-- `GET /customers/:id` - Get customer by ID (includes vehicles and orders)
-- `PATCH /customers/:id` - Update a customer
-- `DELETE /customers/:id` - Delete a customer
-
-### Order Management
-- `POST /orders` - Create a new order (with order items)
-- `GET /orders` - Get all orders
-- `GET /orders/:id` - Get order by ID (includes items and customer)
-- `PATCH /orders/:id` - Update an order
-- `DELETE /orders/:id` - Delete an order
-
-### Supplier Management
-- `POST /suppliers` - Create a new supplier
-- `GET /suppliers` - Get all suppliers
-- `GET /suppliers/:id` - Get supplier by ID (includes parts)
-- `PATCH /suppliers/:id` - Update a supplier
-- `DELETE /suppliers/:id` - Delete a supplier
-
-### Category Management
-- `POST /categories` - Create a new category
-- `GET /categories` - Get all top-level categories (with children)
-- `GET /categories/:id` - Get category by ID (includes parent, children, and parts)
-- `PATCH /categories/:id` - Update a category
-- `DELETE /categories/:id` - Delete a category
-
-## 📝 Example API Usage
-
-### Create a Part
+## Project setup
 
 ```bash
-curl -X POST http://localhost:3000/parts \
-  -H "Content-Type: application/json" \
-  -d '{
-    "sku": "BP-TOY-CAM-2020-F",
-    "name": "Brake Pads Front Set",
-    "description": "Premium ceramic brake pads",
-    "categoryId": 1,
-    "manufacturer": "Bosch",
-    "brand": "Bosch",
-    "oemNumber": "04465-06090",
-    "condition": "new",
-    "supplierId": 1,
-    "costPrice": 45,
-    "retailPrice": 89.99,
-    "wholesalePrice": 65,
-    "quantityInStock": 25,
-    "minimumStockLevel": 15,
-    "reorderPoint": 10
-  }'
+$ npm install
 ```
 
-### Create an Order with Items
+## Compile and run the project
 
 ```bash
-curl -X POST http://localhost:3000/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": 1,
-    "createdById": 1,
-    "orderType": "retail",
-    "status": "pending",
-    "deliveryMethod": "pickup",
-    "items": [
-      {
-        "partId": 1,
-        "quantity": 2,
-        "unitPrice": 89.99
-      }
-    ]
-  }'
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
 ```
 
-### Get Low Stock Parts
+## Run tests
 
 ```bash
-curl http://localhost:3000/parts/low-stock
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
 ```
 
-## 🏗️ Project Structure
+## Deployment
 
-```
-backend/
-├── src/
-│   ├── entities/              # TypeORM entities
-│   │   ├── user.entity.ts
-│   │   ├── customer.entity.ts
-│   │   ├── part.entity.ts
-│   │   └── ...
-│   ├── modules/               # Feature modules
-│   │   ├── parts/
-│   │   │   ├── parts.dto.ts
-│   │   │   ├── parts.service.ts
-│   │   │   ├── parts.controller.ts
-│   │   │   └── parts.module.ts
-│   │   ├── customers/
-│   │   ├── orders/
-│   │   ├── suppliers/
-│   │   └── categories/
-│   ├── app.module.ts          # Root module
-│   └── main.ts                # Application entry point
-├── .env                       # Environment variables
-├── package.json
-└── tsconfig.json
-```
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-## 🔐 Data Validation
-
-All DTOs include validation using `class-validator`:
-
-```typescript
-// Example: CreatePartDto
-export class CreatePartDto {
-  @IsString()
-  @ApiProperty({ example: 'BP-001' })
-  sku: string;
-
-  @IsString()
-  @ApiProperty({ example: 'Brake Pads' })
-  name: string;
-
-  @IsNumber()
-  @Min(0)
-  @ApiProperty({ example: 45.00 })
-  costPrice: number;
-
-  @IsNumber()
-  @ApiProperty()
-  categoryId: number;
-
-  // ... more fields
-}
-```
-
-## 🔄 Database Synchronization
-
-TypeORM is configured with `synchronize: true` in development mode, which automatically creates/updates database tables based on entities.
-
-**⚠️ Important:** Set `synchronize: false` in production and use migrations instead.
-
-## 🧪 Testing the API
-
-1. **Using Swagger UI:**
-   - Navigate to `http://localhost:3000/api/docs`
-   - Click on any endpoint
-   - Click "Try it out"
-   - Fill in the request body
-   - Click "Execute"
-
-2. **Using curl:**
-   - See examples above
-
-3. **Using Postman:**
-   - Import the OpenAPI spec from `http://localhost:3000/api/docs-json`
-
-## 📊 Key Features
-
-### Transaction Support
-Orders are created with transaction support to ensure data integrity:
-```typescript
-await this.dataSource.transaction(async (manager) => {
-  const order = await manager.save(Order, orderData);
-  const items = await manager.save(OrderItem, orderItems);
-  return order;
-});
-```
-
-### Relationships
-All entities properly handle relationships:
-```typescript
-@ManyToOne(() => Category, category => category.parts)
-@JoinColumn({ name: 'category_id' })
-category: Category;
-```
-
-### Indexes
-Performance-critical fields have indexes:
-```typescript
-@Index()
-@Column({ unique: true })
-sku: string;
-```
-
-## 🚦 Available Scripts
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash
-# Development
-npm run start:dev       # Start with hot-reload
-
-# Production
-npm run build          # Build for production
-npm run start:prod     # Start production server
-
-# Testing
-npm run test           # Run unit tests
-npm run test:e2e       # Run end-to-end tests
+$ npm install -g @nestjs/mau
+$ mau deploy
 ```
 
-## 🔧 Configuration
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-### CORS
-CORS is enabled for frontend integration:
-```typescript
-app.enableCors({
-  origin: 'http://localhost:5173', // Vite dev server
-  credentials: true,
-});
-```
+## Resources
 
-### Global Validation
-All requests are validated automatically:
-```typescript
-app.useGlobalPipes(
-  new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }),
-);
-```
+Check out a few resources that may come in handy when working with NestJS:
 
-## 📈 Future Enhancements
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
 
-- [ ] JWT Authentication & Authorization
-- [ ] Role-based access control (RBAC)
-- [ ] File upload for part images
-- [ ] Advanced search and filtering
-- [ ] Reporting endpoints
-- [ ] WebSocket for real-time updates
-- [ ] Rate limiting
-- [ ] API versioning
+## Support
 
-## 🐛 Troubleshooting
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-### Database Connection Issues
-```bash
-# Check PostgreSQL is running
-psql --version
+## Stay in touch
 
-# Test connection
-psql -h localhost -U your_username -d autoparts_db
-```
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-### Port Already in Use
-```bash
-# Kill process on port 3000
-lsof -ti:3000 | xargs kill -9
-```
+## License
 
-### TypeORM Synchronization Issues
-```bash
-# Drop and recreate database
-psql postgres -c "DROP DATABASE autoparts_db;"
-psql postgres -c "CREATE DATABASE autoparts_db;"
-```
-
-## 📄 License
-
-MIT
-
-## 👥 Contributors
-
-- Your Name
-
-## 📞 Support
-
-For issues and questions, please open an issue on GitHub.
-
----
-
-**Built with:** NestJS, TypeORM, PostgreSQL, Swagger
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
