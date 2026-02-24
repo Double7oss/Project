@@ -1,0 +1,916 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model admin_activity_log {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  admin_id    String   @db.Uuid
+  action      String   @db.VarChar(100)
+  target_type String?  @db.VarChar(50)
+  target_id   String?  @db.Uuid
+  details     Json?
+  ip_address  String?  @db.Inet
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users    @relation(fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([admin_id], map: "idx_aal_admin")
+  @@index([created_at(sort: Desc)], map: "idx_aal_created")
+  @@index([target_type, target_id], map: "idx_aal_target")
+}
+
+model bookings {
+  id                  String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id             String            @db.Uuid
+  garage_id           String            @db.Uuid
+  vehicle_id          String?           @db.Uuid
+  quote_id            String?           @db.Uuid
+  request_id          String?           @db.Uuid
+  service_types       String[]
+  scheduled_at        DateTime          @db.Timestamptz(6)
+  duration_minutes    Int?              @db.SmallInt
+  status              booking_status    @default(pending)
+  final_price         Int?
+  garage_notes        String?
+  client_notes        String?
+  completed_at        DateTime?         @db.Timestamptz(6)
+  cancelled_at        DateTime?         @db.Timestamptz(6)
+  cancellation_reason String?
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @default(now()) @db.Timestamptz(6)
+  garages             garages           @relation(fields: [garage_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_quotes      service_quotes?   @relation(fields: [quote_id], references: [id], onUpdate: NoAction)
+  service_requests    service_requests? @relation(fields: [request_id], references: [id], onUpdate: NoAction)
+  users               users             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_vehicles       user_vehicles?    @relation(fields: [vehicle_id], references: [id], onUpdate: NoAction)
+  garage_reviews      garage_reviews[]
+
+  @@index([garage_id], map: "idx_bookings_garage")
+  @@index([scheduled_at], map: "idx_bookings_scheduled")
+  @@index([status], map: "idx_bookings_status")
+  @@index([user_id], map: "idx_bookings_user")
+  @@index([vehicle_id], map: "idx_bookings_vehicle")
+}
+
+model car_brands {
+  id         Int          @id @default(autoincrement())
+  name       String       @unique @db.VarChar(100)
+  logo_url   String?
+  is_popular Boolean      @default(false)
+  sort_order Int          @default(0) @db.SmallInt
+  car_models car_models[]
+}
+
+model car_models {
+  id                    Int                     @id @default(autoincrement())
+  brand_id              Int
+  name                  String                  @db.VarChar(100)
+  year_from             Int?                    @db.SmallInt
+  year_to               Int?                    @db.SmallInt
+  body_type             String?                 @db.VarChar(50)
+  engine_codes          String[]
+  car_brands            car_brands              @relation(fields: [brand_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_compatibility product_compatibility[]
+  user_vehicles         user_vehicles[]
+
+  @@index([brand_id], map: "idx_car_models_brand")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cart_items {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  cart_id    String   @db.Uuid
+  product_id String   @db.Uuid
+  quantity   Int      @default(1)
+  added_at   DateTime @default(now()) @db.Timestamptz(6)
+  carts      carts    @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products   products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cart_id, product_id])
+}
+
+model carts {
+  id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String       @unique @db.Uuid
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime     @default(now()) @db.Timestamptz(6)
+  cart_items cart_items[]
+  users      users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model categories {
+  id               Int          @id @default(autoincrement())
+  parent_id        Int?
+  name_fr          String       @db.VarChar(100)
+  name_ar          String       @db.VarChar(100)
+  slug             String       @unique @db.VarChar(100)
+  icon             String?      @db.VarChar(50)
+  sort_order       Int          @default(0) @db.SmallInt
+  is_active        Boolean      @default(true)
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  categories       categories?  @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
+  other_categories categories[] @relation("categoriesTocategories")
+  products         products[]
+}
+
+model cities {
+  id               Int                @id @default(autoincrement())
+  name_fr          String             @db.VarChar(100)
+  name_ar          String             @db.VarChar(100)
+  region           String?            @db.VarChar(100)
+  latitude         Decimal?           @db.Decimal(10, 8)
+  longitude        Decimal?           @db.Decimal(11, 8)
+  delivery_zones   delivery_zones[]
+  garages          garages[]
+  service_requests service_requests[]
+  suppliers        suppliers[]
+  users            users[]
+}
+
+model delivery_zones {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  supplier_id    String    @db.Uuid
+  city_id        Int
+  price          Int       @default(0)
+  estimated_days Int       @default(3) @db.SmallInt
+  is_active      Boolean   @default(true)
+  cities         cities    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers      suppliers @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([supplier_id, city_id])
+  @@index([city_id], map: "idx_dz_city")
+  @@index([supplier_id], map: "idx_dz_supplier")
+}
+
+model garage_documents {
+  id               String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  garage_id        String          @db.Uuid
+  doc_type         document_type
+  file_url         String
+  file_name        String?         @db.VarChar(255)
+  file_size        Int?
+  status           document_status @default(pending)
+  reviewed_by      String?         @db.Uuid
+  reviewed_at      DateTime?       @db.Timestamptz(6)
+  rejection_reason String?
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  garages          garages         @relation(fields: [garage_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users?          @relation(fields: [reviewed_by], references: [id], onUpdate: NoAction)
+}
+
+model garage_photos {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  garage_id  String   @db.Uuid
+  url        String
+  caption    String?  @db.VarChar(255)
+  is_primary Boolean  @default(false)
+  sort_order Int      @default(0) @db.SmallInt
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  garages    garages  @relation(fields: [garage_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model garage_reviews {
+  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  garage_id         String    @db.Uuid
+  reviewer_id       String    @db.Uuid
+  booking_id        String    @db.Uuid
+  rating            Int       @db.SmallInt
+  quality_rating    Int?      @db.SmallInt
+  price_rating      Int?      @db.SmallInt
+  speed_rating      Int?      @db.SmallInt
+  comment           String?
+  garage_reply      String?
+  garage_replied_at DateTime? @db.Timestamptz(6)
+  is_visible        Boolean   @default(true)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  bookings          bookings  @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_garage_reviews_booking")
+  garages           garages   @relation(fields: [garage_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users     @relation(fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([garage_id], map: "idx_grev_garage")
+  @@index([reviewer_id], map: "idx_grev_reviewer")
+}
+
+model garage_services {
+  id               String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  garage_id        String       @db.Uuid
+  service_type     service_type
+  name             String       @db.VarChar(255)
+  name_ar          String?      @db.VarChar(255)
+  price_from       Int?
+  price_to         Int?
+  duration_minutes Int?         @db.SmallInt
+  is_active        Boolean      @default(true)
+  garages          garages      @relation(fields: [garage_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([garage_id], map: "idx_garage_svc_garage")
+  @@index([service_type], map: "idx_garage_svc_type")
+}
+
+model garages {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id          String             @unique @db.Uuid
+  name             String             @db.VarChar(255)
+  name_ar          String?            @db.VarChar(255)
+  slug             String             @unique @db.VarChar(255)
+  description      String?
+  description_ar   String?
+  garage_type      garage_type        @default(general)
+  city_id          Int
+  address          String
+  latitude         Decimal?           @db.Decimal(10, 8)
+  longitude        Decimal?           @db.Decimal(11, 8)
+  phone            String             @db.VarChar(20)
+  whatsapp         String?            @db.VarChar(20)
+  email            String?            @db.VarChar(255)
+  website_url      String?
+  logo_url         String?
+  banner_url       String?
+  status           garage_status      @default(pending_review)
+  plan             subscription_plan  @default(free)
+  plan_expires_at  DateTime?          @db.Timestamptz(6)
+  is_featured      Boolean            @default(false)
+  is_certified     Boolean            @default(false)
+  specializations  String[]
+  brands_served    String[]
+  opening_hours    Json?
+  price_range      String?            @db.VarChar(5)
+  rating_avg       Decimal            @default(0) @db.Decimal(3, 2)
+  rating_count     Int                @default(0)
+  response_rate    Int?               @db.SmallInt
+  total_bookings   Int                @default(0)
+  accepted_at      DateTime?          @db.Timestamptz(6)
+  rejected_reason  String?
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime?          @db.Timestamptz(6)
+  bookings         bookings[]
+  garage_documents garage_documents[]
+  garage_photos    garage_photos[]
+  garage_reviews   garage_reviews[]
+  garage_services  garage_services[]
+  cities           cities             @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  service_quotes   service_quotes[]
+
+  @@index([city_id], map: "idx_garages_city")
+  @@index([deleted_at], map: "idx_garages_deleted", where: raw("(deleted_at IS NULL)"))
+  @@index([is_featured], map: "idx_garages_featured", where: raw("(is_featured = true)"))
+  @@index([latitude, longitude], map: "idx_garages_location", where: raw("((latitude IS NOT NULL) AND (longitude IS NOT NULL))"))
+  @@index([name(ops: raw("gin_trgm_ops"))], map: "idx_garages_name_trgm", type: Gin)
+  @@index([plan], map: "idx_garages_plan")
+  @@index([rating_avg(sort: Desc)], map: "idx_garages_rating")
+  @@index([slug], map: "idx_garages_slug")
+  @@index([status], map: "idx_garages_status")
+  @@index([garage_type], map: "idx_garages_type")
+  @@index([user_id], map: "idx_garages_user")
+}
+
+model notification_preferences {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id          String   @unique @db.Uuid
+  email_enabled    Boolean  @default(true)
+  sms_enabled      Boolean  @default(true)
+  push_enabled     Boolean  @default(true)
+  whatsapp_enabled Boolean  @default(false)
+  booking_updates  Boolean  @default(true)
+  order_updates    Boolean  @default(true)
+  quote_updates    Boolean  @default(true)
+  promotions       Boolean  @default(false)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+  users            users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model notifications {
+  id         String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String            @db.Uuid
+  type       notification_type
+  title      String            @db.VarChar(255)
+  body       String
+  data       Json?
+  is_read    Boolean           @default(false)
+  read_at    DateTime?         @db.Timestamptz(6)
+  created_at DateTime          @default(now()) @db.Timestamptz(6)
+  users      users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "idx_notif_created")
+  @@index([is_read], map: "idx_notif_read", where: raw("(is_read = false)"))
+  @@index([user_id], map: "idx_notif_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_items {
+  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_id     String    @db.Uuid
+  product_id   String    @db.Uuid
+  supplier_id  String    @db.Uuid
+  product_name String    @db.VarChar(255)
+  unit_price   Int
+  quantity     Int
+  total_price  Int
+  orders       orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products     products  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers    suppliers @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_oi_order")
+  @@index([product_id], map: "idx_oi_product")
+  @@index([supplier_id], map: "idx_oi_supplier")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orders {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  buyer_id         String             @db.Uuid
+  buyer_type       String             @default("car_owner") @db.VarChar(20)
+  status           order_status       @default(pending)
+  subtotal         Int                @default(0)
+  delivery_fee     Int                @default(0)
+  discount_amount  Int                @default(0)
+  total_amount     Int                @default(0)
+  payment_method   payment_method     @default(cod)
+  payment_status   payment_status     @default(pending)
+  delivery_address Json
+  notes            String?
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  order_items      order_items[]
+  users            users              @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments         payments[]
+  return_requests  return_requests[]
+  shipments        shipments[]
+  supplier_reviews supplier_reviews[]
+
+  @@index([buyer_id], map: "idx_orders_buyer")
+  @@index([created_at(sort: Desc)], map: "idx_orders_created")
+  @@index([payment_status], map: "idx_orders_payment")
+  @@index([status], map: "idx_orders_status")
+}
+
+model otp_codes {
+  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String?     @db.Uuid
+  identifier String      @db.VarChar(255)
+  code_hash  String      @db.VarChar(255)
+  purpose    otp_purpose
+  expires_at DateTime    @db.Timestamptz(6)
+  used_at    DateTime?   @db.Timestamptz(6)
+  attempts   Int         @default(0) @db.SmallInt
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  users      users?      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "idx_otp_expires")
+  @@index([identifier, purpose], map: "idx_otp_identifier")
+  @@index([user_id], map: "idx_otp_user")
+}
+
+model payments {
+  id               String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_id         String         @db.Uuid
+  method           payment_method
+  amount           Int
+  currency         String         @default("MAD") @db.VarChar(3)
+  status           payment_status @default(pending)
+  gateway_ref      String?        @db.VarChar(255)
+  gateway_response Json?
+  paid_at          DateTime?      @db.Timestamptz(6)
+  created_at       DateTime       @default(now()) @db.Timestamptz(6)
+  orders           orders         @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model product_compatibility {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  product_id   String     @db.Uuid
+  car_model_id Int
+  year_from    Int?       @db.SmallInt
+  year_to      Int?       @db.SmallInt
+  engine_code  String?    @db.VarChar(50)
+  notes        String?
+  car_models   car_models @relation(fields: [car_model_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products     products   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, car_model_id, engine_code])
+  @@index([car_model_id], map: "idx_compat_model")
+  @@index([product_id], map: "idx_compat_product")
+}
+
+model product_images {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  product_id String   @db.Uuid
+  url        String
+  alt_text   String?  @db.VarChar(255)
+  is_primary Boolean  @default(false)
+  sort_order Int      @default(0) @db.SmallInt
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model products {
+  id                    String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  supplier_id           String                  @db.Uuid
+  category_id           Int
+  name                  String                  @db.VarChar(255)
+  name_ar               String?                 @db.VarChar(255)
+  description           String?
+  oem_number            String?                 @db.VarChar(100)
+  part_brand            String?                 @db.VarChar(100)
+  condition             product_condition       @default(new)
+  part_type             part_type               @default(aftermarket)
+  price                 Int
+  price_before_discount Int?
+  stock_qty             Int                     @default(0)
+  low_stock_threshold   Int?
+  weight_grams          Int?
+  status                product_status          @default(draft)
+  is_featured           Boolean                 @default(false)
+  view_count            Int                     @default(0)
+  sale_count            Int                     @default(0)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  deleted_at            DateTime?               @db.Timestamptz(6)
+  cart_items            cart_items[]
+  order_items           order_items[]
+  product_compatibility product_compatibility[]
+  product_images        product_images[]
+  categories            categories              @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers             suppliers               @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([part_brand], map: "idx_products_brand", where: raw("(part_brand IS NOT NULL)"))
+  @@index([category_id], map: "idx_products_category")
+  @@index([deleted_at], map: "idx_products_deleted", where: raw("(deleted_at IS NULL)"))
+  @@index([name(ops: raw("gin_trgm_ops"))], map: "idx_products_name_trgm", type: Gin)
+  @@index([oem_number], map: "idx_products_oem", where: raw("(oem_number IS NOT NULL)"))
+  @@index([price], map: "idx_products_price")
+  @@index([status], map: "idx_products_status")
+  @@index([supplier_id], map: "idx_products_supplier")
+}
+
+model refresh_tokens {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String    @db.Uuid
+  token_hash  String    @unique @db.VarChar(255)
+  device_info Json?
+  expires_at  DateTime  @db.Timestamptz(6)
+  revoked_at  DateTime? @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "idx_refresh_expires")
+  @@index([token_hash], map: "idx_refresh_hash")
+  @@index([user_id], map: "idx_refresh_user")
+}
+
+model return_requests {
+  id            String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_id      String        @db.Uuid
+  buyer_id      String        @db.Uuid
+  reason        return_reason
+  description   String?
+  status        return_status @default(requested)
+  refund_amount Int?
+  admin_notes   String?
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime      @default(now()) @db.Timestamptz(6)
+  users         users         @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders        orders        @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model service_quotes {
+  id                 String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  request_id         String           @db.Uuid
+  garage_id          String           @db.Uuid
+  price_estimate     Int
+  price_parts        Int?
+  price_labor        Int?
+  estimated_duration Int?             @db.SmallInt
+  available_from     DateTime?        @db.Timestamptz(6)
+  message            String?
+  status             quote_status     @default(pending)
+  valid_until        DateTime?        @db.Timestamptz(6)
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
+  bookings           bookings[]
+  garages            garages          @relation(fields: [garage_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_requests   service_requests @relation(fields: [request_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([request_id, garage_id])
+  @@index([garage_id], map: "idx_squote_garage")
+  @@index([request_id], map: "idx_squote_request")
+  @@index([status], map: "idx_squote_status")
+}
+
+model service_requests {
+  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id        String           @db.Uuid
+  vehicle_id     String?          @db.Uuid
+  city_id        Int
+  service_types  String[]
+  title          String           @db.VarChar(255)
+  description    String?
+  photos         String[]
+  urgency        request_urgency  @default(flexible)
+  budget_max     Int?
+  status         request_status   @default(open)
+  expires_at     DateTime?        @db.Timestamptz(6)
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime         @default(now()) @db.Timestamptz(6)
+  bookings       bookings[]
+  service_quotes service_quotes[]
+  cities         cities           @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_vehicles  user_vehicles?   @relation(fields: [vehicle_id], references: [id], onUpdate: NoAction)
+
+  @@index([city_id], map: "idx_sreq_city")
+  @@index([created_at(sort: Desc)], map: "idx_sreq_created")
+  @@index([status], map: "idx_sreq_status")
+  @@index([urgency], map: "idx_sreq_urgency")
+  @@index([user_id], map: "idx_sreq_user")
+}
+
+model shipment_events {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  shipment_id String    @db.Uuid
+  status      String    @db.VarChar(100)
+  location    String?   @db.VarChar(255)
+  note        String?
+  occurred_at DateTime  @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  shipments   shipments @relation(fields: [shipment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model shipments {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_id        String            @db.Uuid
+  supplier_id     String            @db.Uuid
+  carrier         String?           @db.VarChar(100)
+  tracking_number String?           @db.VarChar(100)
+  status          shipment_status   @default(pending)
+  shipped_at      DateTime?         @db.Timestamptz(6)
+  delivered_at    DateTime?         @db.Timestamptz(6)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  shipment_events shipment_events[]
+  orders          orders            @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers       suppliers         @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_ship_order")
+  @@index([status], map: "idx_ship_status")
+  @@index([supplier_id], map: "idx_ship_supplier")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model subscription_plans_history {
+  id          String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  entity_type String            @db.VarChar(20)
+  entity_id   String            @db.Uuid
+  plan        subscription_plan
+  price_paid  Int               @default(0)
+  started_at  DateTime          @db.Timestamptz(6)
+  expires_at  DateTime          @db.Timestamptz(6)
+  payment_ref String?           @db.VarChar(100)
+  created_at  DateTime          @default(now()) @db.Timestamptz(6)
+}
+
+model supplier_documents {
+  id               String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  supplier_id      String          @db.Uuid
+  doc_type         document_type
+  file_url         String
+  file_name        String?         @db.VarChar(255)
+  file_size        Int?
+  status           document_status @default(pending)
+  reviewed_by      String?         @db.Uuid
+  reviewed_at      DateTime?       @db.Timestamptz(6)
+  rejection_reason String?
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  users            users?          @relation(fields: [reviewed_by], references: [id], onUpdate: NoAction)
+  suppliers        suppliers       @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model supplier_reviews {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  supplier_id String    @db.Uuid
+  reviewer_id String    @db.Uuid
+  order_id    String    @db.Uuid
+  rating      Int       @db.SmallInt
+  comment     String?
+  is_visible  Boolean   @default(true)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  orders      orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_supplier_reviews_order")
+  users       users     @relation(fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers   suppliers @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reviewer_id], map: "idx_srev_reviewer")
+  @@index([supplier_id], map: "idx_srev_supplier")
+}
+
+model suppliers {
+  id                 String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id            String               @unique @db.Uuid
+  business_name      String               @db.VarChar(255)
+  business_name_ar   String?              @db.VarChar(255)
+  description        String?
+  rc_number          String?              @db.VarChar(50)
+  ice_number         String?              @db.VarChar(50)
+  city_id            Int?
+  address            String?
+  phone              String               @db.VarChar(20)
+  whatsapp           String?              @db.VarChar(20)
+  logo_url           String?
+  status             supplier_status      @default(pending_review)
+  plan               subscription_plan    @default(free)
+  plan_expires_at    DateTime?            @db.Timestamptz(6)
+  is_verified        Boolean              @default(false)
+  specializations    String[]
+  brands_carried     String[]
+  rating_avg         Decimal              @default(0) @db.Decimal(3, 2)
+  rating_count       Int                  @default(0)
+  total_orders       Int                  @default(0)
+  rejected_reason    String?
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  deleted_at         DateTime?            @db.Timestamptz(6)
+  delivery_zones     delivery_zones[]
+  order_items        order_items[]
+  products           products[]
+  shipments          shipments[]
+  supplier_documents supplier_documents[]
+  supplier_reviews   supplier_reviews[]
+  cities             cities?              @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([city_id], map: "idx_suppliers_city")
+  @@index([deleted_at], map: "idx_suppliers_deleted", where: raw("(deleted_at IS NULL)"))
+  @@index([business_name(ops: raw("gin_trgm_ops"))], map: "idx_suppliers_name_trgm", type: Gin)
+  @@index([plan], map: "idx_suppliers_plan")
+  @@index([status], map: "idx_suppliers_status")
+  @@index([user_id], map: "idx_suppliers_user")
+}
+
+model user_vehicles {
+  id               String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id          String             @db.Uuid
+  car_model_id     Int
+  year             Int                @db.SmallInt
+  engine_code      String?            @db.VarChar(50)
+  color            String?            @db.VarChar(50)
+  mileage          Int?
+  license_plate    String?            @db.VarChar(20)
+  nickname         String?            @db.VarChar(100)
+  is_primary       Boolean            @default(false)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  bookings         bookings[]
+  service_requests service_requests[]
+  car_models       car_models         @relation(fields: [car_model_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users            users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([car_model_id], map: "idx_vehicles_model")
+  @@index([user_id], map: "idx_vehicles_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                       String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email                    String?                   @unique @db.VarChar(255)
+  phone                    String?                   @unique @db.VarChar(20)
+  password_hash            String?                   @db.VarChar(255)
+  first_name               String                    @db.VarChar(100)
+  last_name                String                    @db.VarChar(100)
+  role                     user_role                 @default(car_owner)
+  status                   user_status               @default(pending)
+  preferred_lang           String                    @default("ar") @db.VarChar(5)
+  avatar_url               String?
+  city_id                  Int?
+  is_phone_verified        Boolean                   @default(false)
+  is_email_verified        Boolean                   @default(false)
+  last_login_at            DateTime?                 @db.Timestamptz(6)
+  created_at               DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                  @default(now()) @db.Timestamptz(6)
+  deleted_at               DateTime?                 @db.Timestamptz(6)
+  admin_activity_log       admin_activity_log[]
+  bookings                 bookings[]
+  carts                    carts?
+  garage_documents         garage_documents[]
+  garage_reviews           garage_reviews[]
+  garages                  garages?
+  notification_preferences notification_preferences?
+  notifications            notifications[]
+  orders                   orders[]
+  otp_codes                otp_codes[]
+  refresh_tokens           refresh_tokens[]
+  return_requests          return_requests[]
+  service_requests         service_requests[]
+  supplier_documents       supplier_documents[]
+  supplier_reviews         supplier_reviews[]
+  suppliers                suppliers?
+  user_vehicles            user_vehicles[]
+  cities                   cities?                   @relation(fields: [city_id], references: [id], onUpdate: NoAction)
+
+  @@index([city_id], map: "idx_users_city")
+  @@index([deleted_at], map: "idx_users_deleted", where: raw("(deleted_at IS NULL)"))
+  @@index([email], map: "idx_users_email", where: raw("(email IS NOT NULL)"))
+  @@index([phone], map: "idx_users_phone", where: raw("(phone IS NOT NULL)"))
+  @@index([role], map: "idx_users_role")
+  @@index([status], map: "idx_users_status")
+}
+
+enum booking_status {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+enum document_status {
+  pending
+  approved
+  rejected
+}
+
+enum document_type {
+  rc
+  ice
+  id_card
+  patent
+  insurance
+  certification
+  other
+}
+
+enum garage_status {
+  pending_review
+  approved
+  suspended
+  rejected
+}
+
+enum garage_type {
+  general
+  specialist
+  bodywork
+  dealer_service
+  mobile_mechanic
+}
+
+enum notification_type {
+  booking_request
+  quote_received
+  booking_confirmed
+  booking_completed
+  order_shipped
+  order_delivered
+  garage_approved
+  supplier_approved
+  new_review
+  low_stock
+  message
+}
+
+enum order_status {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum otp_purpose {
+  phone_verification
+  login
+  password_reset
+}
+
+enum part_type {
+  genuine
+  aftermarket
+  compatible
+}
+
+enum payment_method {
+  cod
+  cmi_card
+  paypal
+  bank_transfer
+  invoice
+}
+
+enum payment_status {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum product_condition {
+  new
+  used
+  refurbished
+}
+
+enum product_status {
+  draft
+  active
+  out_of_stock
+  archived
+}
+
+enum quote_status {
+  pending
+  accepted
+  rejected
+  expired
+  withdrawn
+}
+
+enum request_status {
+  open
+  quotes_received
+  booked
+  completed
+  cancelled
+}
+
+enum request_urgency {
+  flexible
+  this_week
+  urgent
+  emergency
+}
+
+enum return_reason {
+  wrong_part
+  defective
+  not_as_described
+  changed_mind
+}
+
+enum return_status {
+  requested
+  approved
+  rejected
+  received
+  refunded
+}
+
+enum service_type {
+  oil_change
+  brakes
+  ac
+  engine
+  bodywork
+  diagnostic
+  tires
+  electrical
+  exhaust
+  transmission
+  suspension
+  other
+}
+
+enum shipment_status {
+  pending
+  picked_up
+  in_transit
+  out_for_delivery
+  delivered
+  failed
+  returned
+}
+
+enum subscription_plan {
+  free
+  starter
+  pro
+  premium
+}
+
+enum supplier_status {
+  pending_review
+  approved
+  suspended
+  rejected
+}
+
+enum user_role {
+  car_owner
+  garage_owner
+  supplier
+  admin
+}
+
+enum user_status {
+  pending
+  active
+  suspended
+  banned
+}
