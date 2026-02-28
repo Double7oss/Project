@@ -8,6 +8,7 @@ Living documentation of changes made, how they work, and why decisions were made
 - [Project Setup](#1-project-setup)
 - [Database & Prisma](#2-database--prisma)
 - [Auth Module](#3-auth-module)
+- [Garages Module](#4-garages-module)
 
 ---
 
@@ -184,3 +185,75 @@ bcrypt with **12 salt rounds**. Password is optional at registration (social log
 - `app.setGlobalPrefix('api')` → all routes under `/api/...`
 - `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })`
 - `dotenv.config()` called at very top — required so `DATABASE_URL` is set before Prisma WASM engine initializes
+
+---
+
+## 4. Garages Module
+
+**Date:** Feb 2026  
+**Files:** `src/garages/`
+
+### What was done
+Built 12 endpoints across 3 access levels — public, garage owner, and admin.
+
+### Endpoints
+
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| GET | `/api/garages` | — | Search with filters (city, type, specialization, rating) |
+| GET | `/api/garages/:slug` | — | Public garage profile |
+| POST | `/api/garages` | garage_owner | Create garage profile |
+| GET | `/api/garages/me` | garage_owner | Own profile with full detail |
+| PUT | `/api/garages/me` | garage_owner | Update profile |
+| POST | `/api/garages/me/photos` | garage_owner | Add photo (client uploads, sends URL) |
+| DELETE | `/api/garages/me/photos/:id` | garage_owner | Delete photo |
+| POST | `/api/garages/me/services` | garage_owner | Add a service |
+| PUT | `/api/garages/me/services/:id` | garage_owner | Update a service |
+| DELETE | `/api/garages/me/services/:id` | garage_owner | Remove a service |
+| POST | `/api/garages/me/documents` | garage_owner | Upload verification document |
+| GET | `/api/admin/garages/pending` | admin | List pending applications |
+| POST | `/api/admin/garages/:id/approve` | admin | Approve garage |
+| POST | `/api/admin/garages/:id/reject` | admin | Reject with reason |
+
+### Key design decisions
+
+**Slug auto-generation:** Created from garage name using a `slugify()` helper. Uniqueness is guaranteed by retrying with a numeric suffix (`garage-karim-2` etc).
+
+**File uploads:** Photos and documents accept a `file_url`/`url` string — the client uploads to storage (Cloudinary, S3, etc.) and sends the URL back. No server-side file handling yet (planned for storage module).
+
+**Routing conflict fix:** `GET /api/garages/me` is registered **before** `GET /api/garages/:slug` in the controller — otherwise NestJS would match "me" as the slug param.
+
+**Ownership checks:** Every owner action verifies the photo/service/document belongs to the requesting user's garage using a private `assertServiceOwnership()` / garage lookup before any mutation.
+
+**Admin approval flow:**
+- Garage created → `status: pending_review`
+- Admin approves → `status: approved`, `accepted_at` set
+- Admin rejects → `status: rejected`, `rejected_reason` stored
+- Only `pending_review` garages can be approved/rejected (guard throws `BadRequestException` otherwise)
+
+### File structure
+```
+src/garages/
+  dto/
+    create-garage.dto.ts       name, city_id, address, phone + optional fields
+    update-garage.dto.ts       all fields optional (partial update)
+    search-garages.dto.ts      city_id, type, specialization, rating_min, q, page, limit
+    add-photo.dto.ts           url, caption?, is_primary?, sort_order?
+    add-service.dto.ts         service_type, name, price_from/to, duration_minutes
+    update-service.dto.ts      all optional + is_active toggle
+    upload-document.dto.ts     doc_type, file_url, file_name?, file_size?
+    reject-garage.dto.ts       reason (required string)
+  garages.service.ts           all business logic (search, CRUD, admin ops)
+  garages.controller.ts        GaragesController + AdminGaragesController
+  garages.module.ts            registers both controllers + service
+```
+
+### garage_type enum values
+`general` | `specialist` | `bodywork` | `dealer_service` | `mobile_mechanic`
+
+### service_type enum values
+`oil_change` | `brakes` | `ac` | `engine` | `bodywork` | `diagnostic` | `tires` | `electrical` | `exhaust` | `transmission` | `suspension` | `other`
+
+### document_type enum values
+`rc` | `ice` | `id_card` | `patent` | `insurance` | `certification` | `other`
+
