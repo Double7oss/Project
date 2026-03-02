@@ -257,3 +257,141 @@ src/garages/
 ### document_type enum values
 `rc` | `ice` | `id_card` | `patent` | `insurance` | `certification` | `other`
 
+
+---
+
+## 5. Cities Module
+
+**Date:** Mar 2026  
+**Files:** `src/cities/`
+
+### Endpoints
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| GET | `/api/cities` | — | All cities ordered alphabetically |
+| GET | `/api/cities/:id` | — | Single city by ID |
+
+---
+
+## 6. Suppliers Module
+
+**Date:** Mar 2026  
+**Files:** `src/suppliers/`
+
+> [!NOTE]
+> Suppliers do not have a `slug` field in the DB. Public profiles are accessed by `id`. Fields use `business_name` (not `name`) and `brands_carried` (not `brands_sold`).
+
+### Endpoints
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| GET | `/api/suppliers` | — | Search by city, name query |
+| GET | `/api/suppliers/:id` | — | Public supplier profile |
+| POST | `/api/suppliers` | supplier | Create profile |
+| GET | `/api/suppliers/me` | supplier | Own profile with documents |
+| PUT | `/api/suppliers/me` | supplier | Update profile |
+| POST | `/api/suppliers/me/documents` | supplier | Upload verification document |
+| GET | `/api/admin/suppliers/pending` | admin | List pending approvals |
+| POST | `/api/admin/suppliers/:id/approve` | admin | Approve supplier |
+| POST | `/api/admin/suppliers/:id/reject` | admin | Reject with reason |
+
+---
+
+## 7. Products Module
+
+**Date:** Mar 2026  
+**Files:** `src/products/`
+
+> [!NOTE]
+> `category_id` is an `Int` (not `String`). `stock_qty` is the DB field name (mapped from `stock_quantity` in DTOs). No `sku` field in the schema.
+
+### Endpoints
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| GET | `/api/products` | — | Search with filters (category, price, condition, brand) |
+| GET | `/api/products/:id` | — | Full product with images and compatibility |
+| GET | `/api/products/me` | supplier | Supplier's own products |
+| POST | `/api/products` | supplier | Create product |
+| PUT | `/api/products/:id` | supplier | Update (ownership enforced) |
+| DELETE | `/api/products/:id` | supplier | Soft-delete (status → archived) |
+
+---
+
+## 8. Bookings Module
+
+**Date:** Mar 2026  
+**Files:** `src/bookings/`
+
+> [!NOTE]
+> `scheduled_at` is the field name (not `service_date`). Notes field is `client_notes`. Booking status values from enum: `pending`, `confirmed`, `in_progress`, `completed`, `cancelled`.
+
+### Endpoints
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| POST | `/api/bookings` | car_owner | Create booking |
+| GET | `/api/bookings` | any logged in | List own bookings |
+| GET | `/api/bookings/:id` | any logged in | Booking detail |
+| POST | `/api/bookings/:id/cancel` | any logged in | Cancel booking |
+| GET | `/api/garages/me/bookings` | garage_owner | Incoming bookings |
+| PUT | `/api/garages/me/bookings/:id/status` | garage_owner | Update booking status |
+
+---
+
+## 9. Orders Module
+
+**Date:** Mar 2026  
+**Files:** `src/orders/`
+
+> [!NOTE]
+> `cart_items` in the DB has no `unit_price` or `supplier_id`. Product price is read from the `products` table at checkout time.
+
+### Endpoints
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| GET | `/api/cart` | any logged in | Get (or create) cart |
+| POST | `/api/cart/items` | any logged in | Add product to cart |
+| PUT | `/api/cart/items/:id` | any logged in | Update quantity |
+| DELETE | `/api/cart/items/:id` | any logged in | Remove item |
+| POST | `/api/orders` | any logged in | Checkout — converts cart to order |
+| GET | `/api/orders` | any logged in | List orders |
+| GET | `/api/orders/:id` | any logged in | Order detail |
+
+---
+
+## 10. Notifications Module
+
+**Date:** Mar 2026  
+**Files:** `src/notifications/`
+
+### Endpoints
+| Method | Route | Guard | Description |
+|---|---|---|---|
+| GET | `/api/notifications` | any logged in | Paginated list with unread count |
+| POST | `/api/notifications/read-all` | any logged in | Mark all as read |
+| POST | `/api/notifications/:id/read` | any logged in | Mark single notification read |
+
+---
+
+## 11. Upload Module
+
+**Date:** Mar 2026  
+**Files:** `src/upload/`
+
+Files are stored in `Backend/uploads/images/` and `Backend/uploads/documents/` and served as static files at `/uploads/*`.
+
+### Endpoints
+| Method | Route | Limits | Description |
+|---|---|---|---|
+| POST | `/api/upload/image` | 5MB, jpg/png/webp | Upload image, returns `{ url }` |
+| POST | `/api/upload/document` | 10MB, pdf/jpg/png | Upload document, returns `{ url }` |
+
+Send as `multipart/form-data` with field name `file`.
+
+---
+
+## 12. Config Validation (Joi)
+
+**Date:** Mar 2026  
+App now validates required env vars at startup. Missing `DATABASE_URL` or `JWT_ACCESS_SECRET` will throw a clear error and crash instead of failing at runtime.
+
+Required vars: `DATABASE_URL`, `JWT_ACCESS_SECRET` (min 32 chars), `JWT_REFRESH_SECRET` (min 32 chars)  
+Optional: `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES`, `PORT`, `TWILIO_*`
